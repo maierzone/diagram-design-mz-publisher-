@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>Coding-Harness — Anatomie eines Turns</title>
+<link rel="stylesheet" href="/lib/fonts-maierzone@1.0.0/fonts.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Tokens: diagram-design Skin, maierzone-Schriftstack ─────────── */
+:root {
+  --paper:#f5f5f5; --paper-2:#ffffff; --ink:#2d3142; --muted:#4f5d75; --soft:#7a8399;
+  --rule:rgba(45,49,66,0.12); --rule-2:rgba(45,49,66,0.08); --rule-solid:rgba(79,93,117,0.25);
+  --accent:#eb6c36; --accent-tint:rgba(235,108,54,0.08); --accent-line:rgba(235,108,54,0.50);
+  --link:#2e5aa8; --dot:rgba(45,49,66,0.10); --lead:rgba(45,49,66,0.40);
+  --sans:'Inter', system-ui, -apple-system, sans-serif;
+  --serif:'Instrument Serif', 'Times New Roman', serif;
+  --mono:'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+/* Umschalter ohne Script: die Box bedeutet "Gegenteil der Systemeinstellung". */
+body:has(#hd-theme:checked) {
+  --paper:#2d3142; --paper-2:#393e53; --ink:#f5f5f5; --muted:#bfc0c0; --soft:#8e98ac;
+  --rule:rgba(245,245,245,0.12); --rule-2:rgba(245,245,245,0.08); --rule-solid:rgba(191,192,192,0.25);
+  --accent:#f08a59; --accent-tint:rgba(240,138,89,0.10); --accent-line:rgba(240,138,89,0.50);
+  --link:#6a95d8; --dot:rgba(245,245,245,0.10); --lead:rgba(245,245,245,0.40);
+}
+@media (prefers-color-scheme: dark) {
+  body:not(:has(#hd-theme:checked)) {
+  --paper:#2d3142; --paper-2:#393e53; --ink:#f5f5f5; --muted:#bfc0c0; --soft:#8e98ac;
+  --rule:rgba(245,245,245,0.12); --rule-2:rgba(245,245,245,0.08); --rule-solid:rgba(191,192,192,0.25);
+  --accent:#f08a59; --accent-tint:rgba(240,138,89,0.10); --accent-line:rgba(240,138,89,0.50);
+  --link:#6a95d8; --dot:rgba(245,245,245,0.10); --lead:rgba(245,245,245,0.40);
+  }
+  body:has(#hd-theme:checked) {
+  --paper:#f5f5f5; --paper-2:#ffffff; --ink:#2d3142; --muted:#4f5d75; --soft:#7a8399;
+  --rule:rgba(45,49,66,0.12); --rule-2:rgba(45,49,66,0.08); --rule-solid:rgba(79,93,117,0.25);
+  --accent:#eb6c36; --accent-tint:rgba(235,108,54,0.08); --accent-line:rgba(235,108,54,0.50);
+  --link:#2e5aa8; --dot:rgba(45,49,66,0.10); --lead:rgba(45,49,66,0.40);
+  }
+}
+
+body { background:var(--paper); color:var(--ink); font-family:var(--sans);
+       padding:3rem 2rem 2.5rem; min-height:100vh; -webkit-font-smoothing:antialiased; }
+.container { max-width:1200px; margin:0 auto; }
+
+/* ── Kopf ────────────────────────────────────────────────────────── */
+.topbar { display:flex; align-items:flex-start; justify-content:space-between; gap:2rem; }
+.eyebrow { font-family:var(--mono); font-size:0.66rem; font-weight:500; letter-spacing:0.18em;
+           text-transform:uppercase; color:var(--muted); margin-bottom:0.75rem; }
+h1 { font-family:var(--serif); font-weight:400; font-size:clamp(2rem,3.4vw + 1rem,3rem);
+     line-height:1.06; letter-spacing:-0.02em; margin-bottom:0.75rem; max-width:20ch; }
+.subtitle { font-size:1rem; line-height:1.6; color:var(--muted); max-width:62ch; }
+.subtitle strong { color:var(--ink); font-weight:500; }
+
+.sr-only { position:absolute; width:1px; height:1px; padding:0; overflow:hidden;
+            clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+.theme { flex-shrink:0; display:inline-flex; align-items:center; gap:0.5rem; cursor:pointer;
+         background:transparent; border:1px solid var(--rule); border-radius:6px;
+         padding:0.4rem 0.7rem; color:var(--muted); font-family:var(--mono);
+         font-size:0.62rem; letter-spacing:0.14em; text-transform:uppercase; }
+.theme:hover { border-color:var(--rule-solid); color:var(--ink); }
+.theme__dot { width:7px; height:7px; border-radius:50%; background:var(--ink); }
+#hd-theme:focus-visible + .theme { outline:2px solid var(--accent); outline-offset:2px; }
+.theme__on { display:none; }
+body:has(#hd-theme:checked) .theme__on { display:inline; }
+body:has(#hd-theme:checked) .theme__off { display:none; }
+@media (prefers-color-scheme: dark) {
+  .theme__on { display:inline; }
+  .theme__off { display:none; }
+  body:has(#hd-theme:checked) .theme__on { display:none; }
+  body:has(#hd-theme:checked) .theme__off { display:inline; }
+}
+
+/* ── Figur ───────────────────────────────────────────────────────── */
+.figure { margin:2.75rem 0 0; }
+.figure__canvas { overflow-x:auto; }
+svg.loop { display:block; width:100%; min-width:920px; }
+figcaption { margin-top:1.25rem; padding-top:0.875rem; border-top:1px solid var(--rule-2); }
+figcaption p { font-size:0.8125rem; line-height:1.62; color:var(--muted); max-width:80ch; }
+figcaption b { font-family:var(--mono); font-size:0.72rem; letter-spacing:0.08em;
+               text-transform:uppercase; color:var(--soft); font-weight:400; }
+
+/* SVG-Rollen */
+.ring   { fill:none; stroke:var(--muted); stroke-width:1.2; }
+.spoke  { fill:none; stroke:var(--soft); stroke-width:1; stroke-dasharray:5 4; }
+.mask   { fill:var(--paper); }
+.station{ fill:var(--paper); stroke:var(--ink); stroke-width:1; }
+.station--focal { fill:var(--accent-tint); stroke:var(--accent); stroke-width:1.2; }
+.tag    { fill:none; stroke:var(--ink); stroke-width:0.8; opacity:0.40; }
+.tag--focal { stroke:var(--accent); opacity:0.55; }
+.tag-text { fill:var(--soft); font:500 8px var(--mono); letter-spacing:0.08em; text-anchor:middle; }
+.tag-text--focal { fill:var(--accent); }
+.node-name { fill:var(--ink); font:600 12px var(--sans); text-anchor:middle; letter-spacing:-0.005em; }
+.node-name--focal { fill:var(--accent); }
+.sublabel  { fill:var(--soft); font:400 8px var(--mono); text-anchor:middle; letter-spacing:0.02em; }
+.hub       { fill:var(--ink); }
+.hub-name  { fill:var(--paper); font:600 16px var(--sans); text-anchor:middle; }
+.hub-sub   { fill:var(--paper); opacity:0.72; font:400 8px var(--mono); text-anchor:middle; letter-spacing:0.06em; }
+.arrow-label { fill:var(--soft); font:400 8px var(--mono); letter-spacing:0.06em; text-anchor:middle; }
+.dot-fill { fill:var(--dot); }
+.mk-muted { fill:var(--muted); }
+.mk-soft  { fill:var(--soft); }
+.callout      { fill:var(--ink); font:italic 400 14px var(--serif); }
+.callout--acc { fill:var(--accent); }
+.leader      { fill:none; stroke:var(--lead); stroke-width:1; stroke-dasharray:4 3; }
+.leader--acc { stroke:var(--accent-line); }
+.leader-dot      { fill:var(--ink); }
+.leader-dot--acc { fill:var(--accent); }
+.legend-rule { stroke:var(--rule); stroke-width:0.8; }
+.legend-key  { fill:var(--soft); font:500 8px var(--mono); letter-spacing:0.14em; }
+.legend-text { fill:var(--muted); font:400 8px var(--mono); letter-spacing:0.08em; }
+.legend-box  { fill:var(--paper); stroke:var(--ink); stroke-width:1; }
+.legend-box--focal { fill:var(--accent-tint); stroke:var(--accent); stroke-width:1.2; }
+.legend-box--hub { fill:var(--ink); }
+
+/* Kopplung Station ↔ Erläuterung — ohne Script, über :has() */
+.st { cursor:default; }
+.st rect, .st text, .step { transition:opacity 160ms ease, background-color 160ms ease; }
+body:has(.st:hover, .step:hover, .step:focus-visible) .st { opacity:0.34; }
+body:has(.st[data-step="1"]:hover, .step[data-step="1"]:hover, .step[data-step="1"]:focus-visible) .st[data-step="1"] { opacity:1; }
+body:has(.st[data-step="1"]:hover, .step[data-step="1"]:hover, .step[data-step="1"]:focus-visible) .st[data-step="1"] .station { stroke-width:2; }
+body:has(.st[data-step="1"]:hover, .step[data-step="1"]:hover, .step[data-step="1"]:focus-visible) .st[data-step="1"] .station--focal { stroke-width:2.4; }
+body:has(.st[data-step="1"]:hover, .step[data-step="1"]:hover, .step[data-step="1"]:focus-visible) .step[data-step="1"] { background:var(--accent-tint); }
+body:has(.st[data-step="2"]:hover, .step[data-step="2"]:hover, .step[data-step="2"]:focus-visible) .st[data-step="2"] { opacity:1; }
+body:has(.st[data-step="2"]:hover, .step[data-step="2"]:hover, .step[data-step="2"]:focus-visible) .st[data-step="2"] .station { stroke-width:2; }
+body:has(.st[data-step="2"]:hover, .step[data-step="2"]:hover, .step[data-step="2"]:focus-visible) .st[data-step="2"] .station--focal { stroke-width:2.4; }
+body:has(.st[data-step="2"]:hover, .step[data-step="2"]:hover, .step[data-step="2"]:focus-visible) .step[data-step="2"] { background:var(--accent-tint); }
+body:has(.st[data-step="3"]:hover, .step[data-step="3"]:hover, .step[data-step="3"]:focus-visible) .st[data-step="3"] { opacity:1; }
+body:has(.st[data-step="3"]:hover, .step[data-step="3"]:hover, .step[data-step="3"]:focus-visible) .st[data-step="3"] .station { stroke-width:2; }
+body:has(.st[data-step="3"]:hover, .step[data-step="3"]:hover, .step[data-step="3"]:focus-visible) .st[data-step="3"] .station--focal { stroke-width:2.4; }
+body:has(.st[data-step="3"]:hover, .step[data-step="3"]:hover, .step[data-step="3"]:focus-visible) .step[data-step="3"] { background:var(--accent-tint); }
+body:has(.st[data-step="4"]:hover, .step[data-step="4"]:hover, .step[data-step="4"]:focus-visible) .st[data-step="4"] { opacity:1; }
+body:has(.st[data-step="4"]:hover, .step[data-step="4"]:hover, .step[data-step="4"]:focus-visible) .st[data-step="4"] .station { stroke-width:2; }
+body:has(.st[data-step="4"]:hover, .step[data-step="4"]:hover, .step[data-step="4"]:focus-visible) .st[data-step="4"] .station--focal { stroke-width:2.4; }
+body:has(.st[data-step="4"]:hover, .step[data-step="4"]:hover, .step[data-step="4"]:focus-visible) .step[data-step="4"] { background:var(--accent-tint); }
+body:has(.st[data-step="5"]:hover, .step[data-step="5"]:hover, .step[data-step="5"]:focus-visible) .st[data-step="5"] { opacity:1; }
+body:has(.st[data-step="5"]:hover, .step[data-step="5"]:hover, .step[data-step="5"]:focus-visible) .st[data-step="5"] .station { stroke-width:2; }
+body:has(.st[data-step="5"]:hover, .step[data-step="5"]:hover, .step[data-step="5"]:focus-visible) .st[data-step="5"] .station--focal { stroke-width:2.4; }
+body:has(.st[data-step="5"]:hover, .step[data-step="5"]:hover, .step[data-step="5"]:focus-visible) .step[data-step="5"] { background:var(--accent-tint); }
+body:has(.st[data-step="6"]:hover, .step[data-step="6"]:hover, .step[data-step="6"]:focus-visible) .st[data-step="6"] { opacity:1; }
+body:has(.st[data-step="6"]:hover, .step[data-step="6"]:hover, .step[data-step="6"]:focus-visible) .st[data-step="6"] .station { stroke-width:2; }
+body:has(.st[data-step="6"]:hover, .step[data-step="6"]:hover, .step[data-step="6"]:focus-visible) .st[data-step="6"] .station--focal { stroke-width:2.4; }
+body:has(.st[data-step="6"]:hover, .step[data-step="6"]:hover, .step[data-step="6"]:focus-visible) .step[data-step="6"] { background:var(--accent-tint); }
+
+/* ── Stationen im Detail ─────────────────────────────────────────── */
+.steps { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+         gap:1px; margin-top:2.5rem; background:var(--rule); border:1px solid var(--rule); border-radius:6px; overflow:hidden; }
+.step { background:var(--paper-2); padding:1.25rem 1.25rem 1.375rem; outline:none;
+        transition:background 160ms ease; }
+.step:hover, .step:focus-visible, .step.is-on { background:var(--accent-tint); }
+.step:focus-visible { box-shadow:inset 0 0 0 1px var(--accent); }
+.step__no { font-family:var(--mono); font-size:0.62rem; letter-spacing:0.14em; color:var(--soft); }
+.step__head { display:flex; align-items:baseline; gap:0.6rem; margin:0.375rem 0 0.75rem;
+              padding-bottom:0.75rem; border-bottom:1px solid var(--rule-2); }
+.step__head h3 { font-size:0.9375rem; font-weight:600; letter-spacing:-0.01em; }
+.step--focal .step__head h3 { color:var(--accent); }
+.step__sub { font-family:var(--mono); font-size:0.66rem; color:var(--soft); letter-spacing:0.02em; }
+.step p { font-size:0.8125rem; line-height:1.62; color:var(--muted); }
+.step__fail { margin-top:0.875rem; padding-top:0.75rem; border-top:1px solid var(--rule-2); }
+.step__fail span:first-child { display:block; font-family:var(--mono); font-size:0.6rem;
+              letter-spacing:0.16em; text-transform:uppercase; color:var(--soft); margin-bottom:0.25rem; }
+.step__fail span:last-child { font-size:0.78rem; line-height:1.55; color:var(--muted); }
+.step--focal .step__fail span:first-child { color:var(--accent); }
+
+/* ── Karten ──────────────────────────────────────────────────────── */
+.cards { display:grid; grid-template-columns:1.1fr 1fr 0.92fr; gap:1rem; margin-top:1rem; }
+@media (max-width:900px) { .cards { grid-template-columns:1fr; } }
+.card { background:var(--paper-2); border:1px solid var(--rule); border-radius:6px; padding:1.25rem; }
+.card-header { display:flex; align-items:center; gap:0.6rem; margin-bottom:0.875rem;
+               padding-bottom:0.875rem; border-bottom:1px solid var(--rule-2); }
+.card-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.card-dot.coral { background:var(--accent); }
+.card-dot.ink   { background:var(--ink); }
+.card-dot.muted { background:var(--muted); }
+.card h3 { font-size:0.875rem; font-weight:600; letter-spacing:-0.005em; }
+.card ul { list-style:none; color:var(--muted); font-size:0.8125rem; line-height:1.58; }
+.card li { margin-bottom:0.4rem; padding-left:0.875rem; position:relative; }
+.card li::before { content:'—'; position:absolute; left:0; color:var(--rule-solid); font-size:0.75rem; }
+.card li b { color:var(--ink); font-weight:500; }
+.card code { font-family:var(--mono); font-size:0.72rem; color:var(--soft); }
+
+/* ── Fuß ─────────────────────────────────────────────────────────── */
+.footer { margin-top:2rem; padding-top:1.25rem; border-top:1px solid var(--rule);
+          font-family:var(--mono); font-size:0.68rem; letter-spacing:0.06em; color:var(--soft);
+          display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+@media (max-width:640px) { body { padding:2rem 1.125rem; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Coding-Harness · Anatomie eines Turns</p>
+      <h1>Das Modell denkt. Der Harness haftet.</h1>
+      <p class="subtitle">Ein Coding-Harness ist die Maschinerie um ein Sprachmodell: Er montiert den Kontext, prüft jeden Werkzeugaufruf, führt ihn aus und schreibt das Ergebnis zurück. <strong>Sechs Stationen, ein gemeinsamer Speicher</strong> — und genau eine Stelle, an der aus Absicht Wirkung wird.</p>
+    </div>
+    <div>
+      <input type="checkbox" id="hd-theme" class="sr-only">
+      <label class="theme" for="hd-theme">
+        <span class="theme__dot" aria-hidden="true"></span><span class="theme__off">Dunkel</span><span class="theme__on">Hell</span>
+      </label>
+    </div>
+  </header>
+
+  <figure class="figure" id="figure">
+    <div class="figure__canvas">
+      <svg class="loop" viewBox="0 0 1040 740" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="coding-harness-loop-title coding-harness-loop-desc">
+        <title id="coding-harness-loop-title">Ein Turn im Coding-Harness</title>
+        <desc id="coding-harness-loop-desc">Sechs Stationen laufen im Uhrzeigersinn von Auftrag über Modell, Kontrolle, Werkzeug und Umgebung zur Verifikation und zurück zum Auftrag. Jede Station schreibt in ein gemeinsames Kontextfenster in der Mitte; die Station Kontrolle ist als Freigabepunkt zwischen Vorschlag und Vollzug hervorgehoben.</desc>
+        <defs>
+          <pattern id="hd-dots" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle class="dot-fill" cx="1" cy="1" r="0.9"/>
+          </pattern>
+          <marker id="hd-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon class="mk-muted" points="0 0, 8 3, 0 6"/>
+          </marker>
+          <marker id="hd-arrow-soft" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon class="mk-soft" points="0 0, 8 3, 0 6"/>
+          </marker>
+        </defs>
+
+        <rect class="mask" width="1040" height="740"/>
+        <rect width="1040" height="740" fill="url(#hd-dots)" opacity="0.55"/>
+
+        <!-- Ring: sechs Bögen auf demselben Kreis r=240, im Uhrzeigersinn -->
+        <g>
+          <path class="ring" d="M600 113.726 A240 240 0 0 1 704.969 187.073" marker-end="url(#hd-arrow)"/>
+          <path class="ring" d="M743.285 252 A240 240 0 0 1 743.722 426.882" marker-end="url(#hd-arrow)"/>
+          <path class="ring" d="M705.731 492 A240 240 0 0 1 601.130 565.871" marker-end="url(#hd-arrow)"/>
+          <path class="ring" d="M440 566.274 A240 240 0 0 1 335.031 492.927" marker-end="url(#hd-arrow)"/>
+          <path class="ring" d="M296.715 428 A240 240 0 0 1 296.278 253.118" marker-end="url(#hd-arrow)"/>
+          <path class="ring" d="M334.269 188 A240 240 0 0 1 438.870 114.129" marker-end="url(#hd-arrow)"/>
+        </g>
+
+        <!-- Rückschreiben: gestrichelt, von der Innenkante bis 6px vor den Speicher -->
+        <g>
+          <path class="spoke" d="M520 132 V282" marker-end="url(#hd-arrow-soft)"/>
+          <path class="spoke" d="M672.533 252 L615.330 285.002" marker-end="url(#hd-arrow-soft)"/>
+          <path class="spoke" d="M672.533 428 L615.330 394.998" marker-end="url(#hd-arrow-soft)"/>
+          <path class="spoke" d="M520 548 V398" marker-end="url(#hd-arrow-soft)"/>
+          <path class="spoke" d="M367.467 428 L424.670 394.998" marker-end="url(#hd-arrow-soft)"/>
+          <path class="spoke" d="M367.467 252 L424.670 285.002" marker-end="url(#hd-arrow-soft)"/>
+        </g>
+
+        <!-- Kuratierte Spoke-Labels: neben der Linie, 8px sichtbarer Abstand -->
+        <rect class="mask" x="532" y="199" width="48" height="16" rx="4"/>
+        <text class="arrow-label" x="556" y="211">AUFTRAG</text>
+        <rect class="mask" x="638" y="383" width="52" height="16" rx="4"/>
+        <text class="arrow-label" x="664" y="395">FREIGABE</text>
+        <rect class="mask" x="355" y="280" width="44" height="16" rx="4"/>
+        <text class="arrow-label" x="377" y="292">BEFUND</text>
+
+        <!-- Stationen -->
+        <g class="st" data-step="1">
+          <rect class="station" x="440" y="68" width="160" height="64" rx="6"/>
+          <rect class="tag" x="452" y="80" width="24" height="12" rx="2"/>
+          <text class="tag-text" x="464" y="89">01</text>
+          <text class="node-name" x="520" y="108">Auftrag</text>
+          <text class="sublabel" x="520" y="124">mensch · absicht</text>
+        </g>
+        <g class="st" data-step="2">
+          <rect class="station" x="648" y="188" width="160" height="64" rx="6"/>
+          <rect class="tag" x="660" y="200" width="24" height="12" rx="2"/>
+          <text class="tag-text" x="672" y="209">02</text>
+          <text class="node-name" x="728" y="228">Modell</text>
+          <text class="sublabel" x="728" y="244">plan · werkzeugwahl</text>
+        </g>
+        <g class="st" data-step="3">
+          <rect class="station station--focal" x="648" y="428" width="160" height="64" rx="6"/>
+          <rect class="tag tag--focal" x="660" y="440" width="24" height="12" rx="2"/>
+          <text class="tag-text tag-text--focal" x="672" y="449">03</text>
+          <text class="node-name node-name--focal" x="728" y="468">Kontrolle</text>
+          <text class="sublabel" x="728" y="484">rechte · hooks · sandbox</text>
+        </g>
+        <g class="st" data-step="4">
+          <rect class="station" x="440" y="548" width="160" height="64" rx="6"/>
+          <rect class="tag" x="452" y="560" width="24" height="12" rx="2"/>
+          <text class="tag-text" x="464" y="569">04</text>
+          <text class="node-name" x="520" y="588">Werkzeug</text>
+          <text class="sublabel" x="520" y="604">read · edit · bash</text>
+        </g>
+        <g class="st" data-step="5">
+          <rect class="station" x="232" y="428" width="160" height="64" rx="6"/>
+          <rect class="tag" x="244" y="440" width="24" height="12" rx="2"/>
+          <text class="tag-text" x="256" y="449">05</text>
+          <text class="node-name" x="312" y="468">Umgebung</text>
+          <text class="sublabel" x="312" y="484">repo · shell · netz</text>
+        </g>
+        <g class="st" data-step="6">
+          <rect class="station" x="232" y="188" width="160" height="64" rx="6"/>
+          <rect class="tag" x="244" y="200" width="24" height="12" rx="2"/>
+          <text class="tag-text" x="256" y="209">06</text>
+          <text class="node-name" x="312" y="228">Verifikation</text>
+          <text class="sublabel" x="312" y="244">tests · lint · diff</text>
+        </g>
+
+        <!-- Der eine geteilte Speicher -->
+        <rect class="hub" x="420" y="288" width="200" height="104" rx="8"/>
+        <text class="hub-name" x="520" y="336">Kontextfenster</text>
+        <text class="hub-sub" x="520" y="360">ENDLICH · GEMEINSAM</text>
+
+        <!-- Editorial-Asides -->
+        <text class="callout" x="32" y="44">Ohne Rücklauf ist es ein Chat, kein Harness.</text>
+        <path class="leader" d="M 150 56 Q 214 108 284 188"/>
+        <circle class="leader-dot" cx="284" cy="188" r="2"/>
+
+        <text class="callout callout--acc" x="1008" y="636" text-anchor="end">Hier endet Absicht, hier beginnt Wirkung.</text>
+        <path class="leader leader--acc" d="M 836 624 Q 796 556 776 492"/>
+        <circle class="leader-dot--acc" cx="776" cy="492" r="2"/>
+
+        <!-- Legende -->
+        <line class="legend-rule" x1="32" y1="684" x2="1008" y2="684"/>
+        <text class="legend-key" x="32" y="704">LEGENDE</text>
+        <rect class="legend-box" x="140" y="694" width="20" height="12" rx="3"/>
+        <text class="legend-text" x="168" y="704">STATION</text>
+        <rect class="legend-box legend-box--focal" x="320" y="694" width="20" height="12" rx="3"/>
+        <text class="legend-text" x="348" y="704">KONTROLLPUNKT</text>
+        <rect class="legend-box legend-box--hub" x="500" y="694" width="20" height="12" rx="3"/>
+        <text class="legend-text" x="528" y="704">GETEILTER SPEICHER</text>
+        <g><path class="ring" d="M680 700 H698" marker-end="url(#hd-arrow)"/></g>
+        <text class="legend-text" x="708" y="704">TURN-ABLAUF</text>
+        <g><path class="spoke" d="M856 700 H874" marker-end="url(#hd-arrow-soft)"/></g>
+        <text class="legend-text" x="884" y="704">RÜCKSCHREIBEN</text>
+      </svg>
+    </div>
+    <figcaption><p><b>Abb. 1</b> &nbsp;Ein Turn im Coding-Harness. Im Uhrzeigersinn laufen Auftrag, Modell, Kontrolle, Werkzeug, Umgebung und Verifikation; die gestrichelten Speichen zeigen, was jede Station in das gemeinsame Kontextfenster zurückschreibt. Zeigen Sie auf eine Station oder eine Erläuterung — beide sind gekoppelt.</p></figcaption>
+  </figure>
+
+  <section class="steps" aria-label="Die sechs Stationen im Detail">
+    <article class="step" data-step="1" tabindex="0">
+      <p class="step__no">01</p>
+      <div class="step__head"><h3>Auftrag</h3><span class="step__sub">mensch · absicht</span></div>
+      <p>Ein Satz Absicht, meist unterspezifiziert. Der Harness übersetzt ihn nicht — er stellt ihn zu, zusammen mit allem, was das Modell sonst über dieses Repo wissen muss: Projektgedächtnis, Konventionen, offene Aufgaben.</p>
+      <p class="step__fail"><span>Fehlermodus</span><span>Der Auftrag wird geraten statt geklärt.</span></p>
+    </article>
+    <article class="step" data-step="2" tabindex="0">
+      <p class="step__no">02</p>
+      <div class="step__head"><h3>Modell</h3><span class="step__sub">plan · werkzeugwahl</span></div>
+      <p>Die einzige Station ohne Gedächtnis. Sie sieht ausschließlich, was im Kontextfenster steht, und antwortet mit Text: einer Absicht und dem nächsten Werkzeugaufruf. Alles, was sie „weiß“, hat eine andere Station hineingeschrieben.</p>
+      <p class="step__fail"><span>Fehlermodus</span><span>Was nicht im Fenster steht, existiert nicht.</span></p>
+    </article>
+    <article class="step step--focal" data-step="3" tabindex="0">
+      <p class="step__no">03</p>
+      <div class="step__head"><h3>Kontrolle</h3><span class="step__sub">rechte · hooks · sandbox</span></div>
+      <p>Der Punkt zwischen Vorschlag und Vollzug: Rechtemodus, Hooks, Sandbox, Pfad- und Netzgrenzen. Hier wird ein Aufruf zugelassen, umgeschrieben oder abgelehnt — und nur hier lässt sich später begründen, warum etwas passiert ist.</p>
+      <p class="step__fail"><span>Fehlermodus</span><span>Wer alles erlaubt, hat keinen Harness, sondern eine Fernbedienung.</span></p>
+    </article>
+    <article class="step" data-step="4" tabindex="0">
+      <p class="step__no">04</p>
+      <div class="step__head"><h3>Werkzeug</h3><span class="step__sub">read · edit · bash</span></div>
+      <p>Ein schmales, scharfes Set. Jedes Werkzeug hat eine Signatur, ein Limit und eine Fehlermeldung, die das Modell lesen kann. Die Werkzeuge sind die eigentliche Schnittstelle des Harness — nicht der Prompt.</p>
+      <p class="step__fail"><span>Fehlermodus</span><span>Vierzig Werkzeuge, keine Auswahlhilfe.</span></p>
+    </article>
+    <article class="step" data-step="5" tabindex="0">
+      <p class="step__no">05</p>
+      <div class="step__head"><h3>Umgebung</h3><span class="step__sub">repo · shell · netz</span></div>
+      <p>Der Ort, an dem tatsächlich etwas geschieht: Dateien ändern sich, Prozesse laufen, Zeit vergeht. Sie ist entweder reproduzierbar — gleiche Aufgabe, gleicher Container, gleiches Ergebnis — oder sie ist keine Grundlage.</p>
+      <p class="step__fail"><span>Fehlermodus</span><span>Grün auf dem Laptop, rot im Container.</span></p>
+    </article>
+    <article class="step" data-step="6" tabindex="0">
+      <p class="step__no">06</p>
+      <div class="step__head"><h3>Verifikation</h3><span class="step__sub">tests · lint · diff</span></div>
+      <p>Die Runde endet erst, wenn etwas widerspricht oder bestätigt: Testlauf, Linter, Typprüfung, gelesener Diff. Diese Station erzeugt den einzigen Text im Kontextfenster, den das Modell nicht selbst geschrieben hat.</p>
+      <p class="step__fail"><span>Fehlermodus</span><span>Der Agent erklärt, statt zu prüfen.</span></p>
+    </article>
+  </section>
+
+  <section class="cards">
+    <div class="card">
+      <div class="card-header"><span class="card-dot coral"></span><h3>Was der Harness beiträgt</h3></div>
+      <ul>
+        <li><b>Kontextmontage</b> — Systemregeln, Projektgedächtnis, Skills, Verlauf, alles in ein endliches Fenster</li>
+        <li><b>Werkzeugvertrag</b> — Signatur, Limit, lesbare Fehlermeldung</li>
+        <li><b>Durchsetzung</b> — zulassen, umschreiben, ablehnen; Hooks statt Hoffnung</li>
+        <li><b>Rücklauf</b> — Exit-Code, Diff und Testausgabe zurück in den Kontext</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-dot ink"></span><h3>Woran er scheitert</h3></div>
+      <ul>
+        <li>Das Fenster läuft über — die Kompaktierung verwirft genau das Entscheidende</li>
+        <li>Werkzeugwildwuchs — jedes zusätzliche Werkzeug verteuert jede Entscheidung</li>
+        <li>Blinder Vollzug — alles erlaubt, nichts geprüft, nichts nachvollziehbar</li>
+        <li>Kein Befund — Erfolg wird behauptet statt gemessen</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-dot muted"></span><h3>Woran man ihn misst</h3></div>
+      <ul>
+        <li>Turns bis zum grünen Testlauf <code>p50 / p90</code></li>
+        <li>Anteil abgelehnter Aufrufe <code>guard_rate</code></li>
+        <li>Fensterauslastung je Turn <code>ctx_used</code></li>
+        <li>Wiederholbarkeit <code>same task → same diff</code></li>
+      </ul>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <span>DIAGRAMMTYP LOOP · 6 STATIONEN, 1 HUB · 2 AKZENTE · DICHTE 4/10</span>
+    <span>SCHRIFTEN: INSTRUMENT SERIF / INTER / IBM PLEX MONO — SELBST GEHOSTET, ERSATZ FÜR GEIST</span>
+  </footer>
+
+</div>
+</body>
+</html>
