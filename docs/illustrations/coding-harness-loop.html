@@ -144,6 +144,30 @@ body:has(.st[data-step="6"]:hover, .step[data-step="6"]:hover, .step[data-step="
 body:has(.st[data-step="6"]:hover, .step[data-step="6"]:hover, .step[data-step="6"]:focus-visible) .st[data-step="6"] .station--focal { stroke-width:2.4; }
 body:has(.st[data-step="6"]:hover, .step[data-step="6"]:hover, .step[data-step="6"]:focus-visible) .step[data-step="6"] { background:var(--accent-tint); }
 
+/* Easter Egg: Mini-Claude versteckt sich hinter dem Kontextfenster und winkt hin und wieder. */
+.mini { pointer-events:none; opacity:0.45; }
+.mini__solid  { fill:var(--ink); }
+.mini__stroke { fill:none; stroke:var(--ink); stroke-linecap:round; stroke-width:2; }
+.mini__limb   { fill:none; stroke:var(--ink); stroke-linecap:round; stroke-width:2.6; }
+.mini__eye    { fill:var(--paper); }
+.mini__arm    { transform-box:view-box; transform-origin:496px 292px; transform:translateY(26px);
+                animation:mini-peek 22s ease-in-out infinite; }
+.mini__hand   { transform-box:view-box; transform-origin:496px 292px;
+                animation:mini-wave 22s ease-in-out infinite; }
+@keyframes mini-peek {
+  0%, 78%   { transform:translateY(26px); }
+  82%, 94%  { transform:translateY(0); }
+  97%, 100% { transform:translateY(26px); }
+}
+@keyframes mini-wave {
+  0%, 82%   { transform:rotate(0deg); }
+  84.5%     { transform:rotate(16deg); }
+  87%       { transform:rotate(-12deg); }
+  89.5%     { transform:rotate(16deg); }
+  92%       { transform:rotate(-12deg); }
+  94%, 100% { transform:rotate(0deg); }
+}
+
 /* ── Stationen im Detail ─────────────────────────────────────────── */
 .steps { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
          gap:1px; margin-top:2.5rem; background:var(--rule); border:1px solid var(--rule); border-radius:6px; overflow:hidden; }
@@ -186,7 +210,7 @@ body:has(.st[data-step="6"]:hover, .step[data-step="6"]:hover, .step[data-step="
           font-family:var(--mono); font-size:0.68rem; letter-spacing:0.06em; color:var(--soft);
           display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
 
-@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; animation:none !important; } }
 @media (max-width:640px) { body { padding:2rem 1.125rem; } }
 </style>
 </head>
@@ -297,6 +321,28 @@ body:has(.st[data-step="6"]:hover, .step[data-step="6"]:hover, .step[data-step="
           <text class="tag-text" x="256" y="209">06</text>
           <text class="node-name" x="312" y="228">Verifikation</text>
           <text class="sublabel" x="312" y="244">tests · lint · diff</text>
+        </g>
+
+        <!-- Versteckt hinter dem Speicher: winkt etwa alle 22 Sekunden. -->
+        <g class="mini" aria-hidden="true">
+          <g class="mini__arm">
+            <g class="mini__hand">
+              <path class="mini__limb" d="M496 300 V288" stroke-width="3.4"/>
+              <rect class="mini__solid" x="491.5" y="278" width="9" height="12" rx="3.5"/>
+              <path class="mini__limb" d="M493 280 L492.4 273.6"/>
+              <path class="mini__limb" d="M496 279 V272.4"/>
+              <path class="mini__limb" d="M499 280 L499.6 273.6"/>
+              <path class="mini__limb" d="M492 284 L488 280.5"/>
+            </g>
+          </g>
+          <circle class="mini__solid" cx="464" cy="294" r="14"/>
+          <path class="mini__stroke" d="M453.3 285 L449.4 281.8"/>
+          <path class="mini__stroke" d="M457.5 281.6 L455.2 277.2"/>
+          <path class="mini__stroke" d="M464 280 V275"/>
+          <path class="mini__stroke" d="M470.5 281.6 L472.8 277.2"/>
+          <path class="mini__stroke" d="M474.7 285 L478.6 281.8"/>
+          <circle class="mini__eye" cx="459.5" cy="285" r="1.6"/>
+          <circle class="mini__eye" cx="468.5" cy="285" r="1.6"/>
         </g>
 
         <!-- Der eine geteilte Speicher -->
